@@ -1,9 +1,7 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
-import styles from '../index.scss';
 import React from 'react';
 import BookStore from '../stores/BookStore.js';
-import * as BookActions from '../actions/BookActions.js';
-import Book from './Book.jsx';
+import BookActions from '../actions/BookActions.js';
 
 import SaveForm from './SaveForm.jsx';
 import EditForm from './EditForm.jsx';
@@ -14,75 +12,64 @@ import {
   Link
 } from 'react-router-dom'
 
-const AddNewBook = () => (
-  <SaveForm />
-)
-
-const PageLinks = () => (
-  <div>
-    <ul>
-      <li><Link to="/">Home</Link></li>
-      <li><Link to="/book/add">Add New Book</Link></li>
-    </ul>
-
-    <hr/>
-    <Route path="/book/add" exact={true} component={AddNewBook}/>
-  </div>
-)
-
-export default class App extends React.Component {
+class BookApp extends React.Component {
   constructor(props) {
     super(props);
 
     this.getPageLinks = this.getPageLinks.bind(this);
 
+    this.storeChangeCb = this.storeChangeCb.bind(this);
+
+    this.getBookAddComponent = this.getBookAddComponent.bind(this);
     this.getBookEditComponent = this.getBookEditComponent.bind(this);
     this.getHomeComponent = this.getHomeComponent.bind(this);
 
-    this.getAllBooks = this.getAllBooks.bind(this); // Must be
     this.getBookLinks = this.getBookLinks.bind(this);
     this.handleBookEditInputChange = this.handleBookEditInputChange.bind(this);
     this.handleBookEditSubmit = this.handleBookEditSubmit.bind(this);
-    this.state = {books: []}
+    this.handleBookDelete = this.handleBookDelete.bind(this);
+    this.state = {books: [], fetchStatus: 'Fetching books...'};
   }
 
-  // Kuunnellaan change eventtiä. Kun tulee, haetaan kaikki kirjat
   componentWillMount() {
-    BookStore.on("change", this.getAllBooks);
+    BookStore.on('change', this.storeChangeCb);
     BookActions.getBooks();
-    console.log("Number", BookStore.listenerCount("change"));
-
   }
 
   componentWillUnmount() {
-    BookStore.removeListener("change", this.getAllBooks);
+    BookStore.removeListener('change', this.storeChangeCb);
   }
 
-  getAllBooks() {
-
-    this.setState({books: BookStore.getAll()});
+  storeChangeCb() {
+    this.setState({books: BookStore.books});
     this.setState({fetchStatus: BookStore.fetchStatus});
-
   }
 
   handleBookEditInputChange(bookId, fieldName, value) {
 
-    const bookIndex = this.state.books.findIndex((book) => book.id == bookId);
+    const bookIndex = this.state.books.findIndex((book) => book.id === bookId);
 
-    if (bookIndex != -1) {
+    if (bookIndex !== -1) {
       let booksData = this.state.books;
-      let editedBookData = booksData.filter((book) => book.id == bookId)[0];
+      let editedBookData = booksData.filter((book) => book.id === bookId)[0];
       editedBookData[fieldName] = value;
-      booksData[bookIndex] = editedBookData;
-      this.setState({books: booksData});
+      BookActions.updateBookList(editedBookData);
     } else {
       console.error(`Cannot find book with id ${bookId}`);
     }
 
   }
 
+  handleBookDelete(bookId) {
+    BookActions.deleteBook(bookId);
+  }
+
   handleBookEditSubmit(bookId) {
-    console.log('edit submit of book ' + bookId);
+    BookActions.updateBook(this.state.books.filter((book) => book.id === bookId)[0]);
+  }
+
+  handleBookAddSubmit(book) {
+    BookActions.addBook(book);
   }
 
   getPageLinks() {
@@ -95,7 +82,7 @@ export default class App extends React.Component {
 
           <hr/>
           <Route path="/" component={this.getHomeComponent}/>
-          <Route path="/book/add" component={AddNewBook}/>
+          <Route path="/book/add" component={this.getBookAddComponent}/>
       </div>
     )
   }
@@ -103,7 +90,11 @@ export default class App extends React.Component {
   getBookEditComponent({ match }) {
     const booksById = this.state.books.filter((book) => book.id == match.params.id);
     const bookProps = booksById[0];
-    return <EditForm {...bookProps} onBookEditChange={this.handleBookEditInputChange} onBookEditSubmit={this.handleBookEditSubmit} />
+    return <EditForm {...bookProps} onBookEditChange={this.handleBookEditInputChange} onBookEditSubmit={this.handleBookEditSubmit} onBookDelete={this.handleBookDelete} />
+  }
+
+  getBookAddComponent() {
+    return <SaveForm onBookAddSubmit={this.handleBookAddSubmit} />
   }
 
   getHomeComponent() {
@@ -116,11 +107,11 @@ export default class App extends React.Component {
   }
 
   getBookLinks() {
-    const bookLinks = this.state.books.map(z =>
+    const bookLinks = this.state.books.length > 0 ? this.state.books.map(z =>
       <li key={z.id}>
         <Link to={`/book/edit/${z.id}`}>{z.name} by {z.author} (click to edit)</Link>
       </li>
-    )
+    ) : [];
     return (
       <div>
         <ul>
@@ -138,4 +129,7 @@ export default class App extends React.Component {
       </Router>
     )
   }
+
 }
+
+export default BookApp;

@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 class EditForm extends React.Component {
 
@@ -15,7 +16,7 @@ class EditForm extends React.Component {
     const value = target.value;
     const inputName = target.name;
 
-    this.props.onBookEditChange(this.props.id, inputName, value);    
+    this.props.onBookEditChange(this.props.id, inputName, value);
   }
 
   handleSubmit(e) {
@@ -68,10 +69,10 @@ class EditForm extends React.Component {
 }
 
 EditForm.propTypes = {
-  id: React.PropTypes.number,
-  name: React.PropTypes.string,
-  author: React.PropTypes.string,
-  description: React.PropTypes.string,
+  id: PropTypes.number,
+  name: PropTypes.string,
+  author: PropTypes.string,
+  description: PropTypes.string,
 };
 
 export default EditForm

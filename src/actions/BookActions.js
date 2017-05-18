@@ -12,7 +12,6 @@ const Actions = {
         });
 
         setTimeout(() => { // Remove, just to show fetchin...
-
             const url = baseUrl;
 
             $.ajax({

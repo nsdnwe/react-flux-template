@@ -3,8 +3,9 @@ import React from 'react';
 import BookStore from '../stores/BookStore.js';
 import BookActions from '../actions/BookActions.js';
 
-import SaveForm from './SaveForm.jsx';
-import EditForm from './EditForm.jsx';
+import SaveForm from './SaveForm';
+import EditForm from './EditForm';
+import InputField from './InputField';
 
 import {
   BrowserRouter as Router,
@@ -20,15 +21,18 @@ class BookApp extends React.Component {
 
     this.storeChangeCb = this.storeChangeCb.bind(this);
 
+    this.getSearchFilterComponent = this.getSearchFilterComponent.bind(this);
     this.getBookAddComponent = this.getBookAddComponent.bind(this);
     this.getBookEditComponent = this.getBookEditComponent.bind(this);
     this.getHomeComponent = this.getHomeComponent.bind(this);
 
     this.getBookLinks = this.getBookLinks.bind(this);
+
+    this.handleBookFilterTextChange = this.handleBookFilterTextChange.bind(this);
     this.handleBookEditInputChange = this.handleBookEditInputChange.bind(this);
     this.handleBookEditSubmit = this.handleBookEditSubmit.bind(this);
     this.handleBookDelete = this.handleBookDelete.bind(this);
-    this.state = {books: [], fetchStatus: 'Fetching books...'};
+    this.state = {books: [], fetchStatus: 'Fetching books...', filterText: ''};
   }
 
   componentWillMount() {
@@ -50,7 +54,7 @@ class BookApp extends React.Component {
     const bookIndex = this.state.books.findIndex((book) => book.id === bookId);
 
     if (bookIndex !== -1) {
-      let booksData = this.state.books;
+      const booksData = this.state.books;
       let editedBookData = booksData.filter((book) => book.id === bookId)[0];
       editedBookData[fieldName] = value;
       BookActions.updateBookList(editedBookData);
@@ -87,6 +91,27 @@ class BookApp extends React.Component {
     )
   }
 
+  handleBookFilterTextChange(text) {
+    this.setState({filterText: text});
+
+    let filteredBooks = BookStore.books;
+
+    if (text.length > 0) {
+      const textAsLowerCase = text.toLowerCase();
+      filteredBooks = filteredBooks.filter((book) => (
+          book.name.toLowerCase().indexOf(text) !== -1 ||
+          book.author.toLowerCase().indexOf(text) !== -1 ||
+          book.description.toLowerCase().indexOf(text) !== -1
+      ));
+    }
+
+    this.setState({books: filteredBooks});
+  }
+
+  getSearchFilterComponent() {
+    return <InputField placeHolderText='Search books...' filterText={this.state.filterText} onInputTextChange={this.handleBookFilterTextChange} />
+  }
+
   getBookEditComponent({ match }) {
     const booksById = this.state.books.filter((book) => book.id == match.params.id);
     const bookProps = booksById[0];
@@ -101,6 +126,7 @@ class BookApp extends React.Component {
     return (
       <div>
         {this.state.fetchStatus}
+        {this.getSearchFilterComponent()}
         {this.getBookLinks()}
       </div>
     )
